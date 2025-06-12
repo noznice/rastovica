@@ -4,7 +4,10 @@ import './JumpingGame.css'
 const GRAVITY = 0.5
 const JUMP_POWER = 20
 const GAME_WIDTH = 1024
+const GAME_HEIGHT = 1024
 const PLAYER_WIDTH = 100
+const PLAYER_HEIGHT = 100
+const PLATFORM = { x: 100, y: 333, width: 80, height: 10 }
 
 const MOVE_SPEED = 5
 
@@ -15,6 +18,8 @@ export default function JumpingGame() {
   const frame = useRef<number>()
   const keys = useRef({ left: false, right: false, space: false })
   const yRef = useRef(0)
+
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,10 +55,37 @@ export default function JumpingGame() {
       velocity.current -= GRAVITY
       setY(prev => {
         let newY = prev + velocity.current
-        if (newY < 0) {
-          newY = 0
+          const withinPlatformX =
+          x + PLAYER_WIDTH > PLATFORM.x && x < PLATFORM.x + PLATFORM.width
+
+        const wasAbovePlatform = prev >= PLATFORM.y + PLATFORM.height
+        const crossedDown =
+          velocity.current <= 0 &&
+          wasAbovePlatform &&
+          newY <= PLATFORM.y + PLATFORM.height
+
+        const wasBelowPlatform = prev + PLAYER_HEIGHT <= PLATFORM.y
+        const crossedUp =
+          velocity.current > 0 &&
+          wasBelowPlatform &&
+          newY + PLAYER_HEIGHT >= PLATFORM.y
+
+        if (crossedDown && withinPlatformX) {
+          newY = PLATFORM.y + PLATFORM.height
           velocity.current = 0
+        } else if (crossedUp && withinPlatformX) {
+          newY = PLATFORM.y - PLAYER_HEIGHT
+          velocity.current = 0
+        } else {
+          if (newY < 0) {
+            newY = 0
+            velocity.current = 0
+          } else if (newY > GAME_HEIGHT - PLAYER_HEIGHT) {
+            newY = GAME_HEIGHT - PLAYER_HEIGHT
+            velocity.current = 0
+          }
         }
+
         yRef.current = newY
         return newY
       })
@@ -70,6 +102,10 @@ export default function JumpingGame() {
       <div
         className="player"
         style={{ bottom: `${y}px`, left: `${x}px` }}
+      />
+         <div
+        className="platform"
+        style={{ left: PLATFORM.x, bottom: PLATFORM.y, width: PLATFORM.width, height: PLATFORM.height }}
       />
       <div className="floor" />
     </div>
